@@ -1,0 +1,4 @@
+# Pyctf/MANIFEST.in
+include README.md
+recursive-include pyctf *
+recursive-include pyctf/config *
