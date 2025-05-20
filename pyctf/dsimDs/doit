@@ -1,0 +1,8 @@
+#! /bin/sh
+
+ds=/home/tomh/coreg/EYZQADGL_asvef_20180608_01-f.ds
+mri=/home/tomh/coreg
+p=/tmp/beta.param
+
+#python -i dsimDs -d $ds -p $p -o /tmp/new.ds -n 2400 -r 1200 --mridir $mri
+python -i dsimDs -d $ds -p $p -o /tmp/new.ds -n 2400 -r 1200 --sf 10 20 30 --mridir $mri

@@ -1,0 +1,25 @@
+// AFNI startup script, from Datamode->Misc->Save Layout
+OPEN_WINDOW A geom=+2+72
+SET_THRESHOLD A.0001 1
+SET_PBAR_ALL A.-99 255.000000 Reds_and_Blues_Inv
+SET_FUNC_VISIBLE A.-
+SET_FUNC_RESAM A.NN.NN
+SET_FUNC_AUTORANGE A.+
+SET_UNDERLAY A.brain 0
+SET_OVERLAY A.brain 0 0
+SET_DICOM_XYZ A 0.000000 -2.000000 1.000000
+OPEN_WINDOW A.axialimage geom=311x370+5+483 ifrac=0.8 opacity=6
+OPEN_WINDOW A.sagittalimage geom=381x302+293+483 ifrac=0.8 opacity=6
+OPEN_WINDOW A.coronalimage geom=350x329+626+483 ifrac=0.8 opacity=6
+OPEN_WINDOW B geom=+439+64
+SET_THRESHOLD B.0001 1
+SET_PBAR_ALL B.-99 255.000000 Reds_and_Blues_Inv
+SET_FUNC_VISIBLE B.-
+SET_FUNC_RESAM B.NN.NN
+SET_FUNC_AUTORANGE B.+
+SET_UNDERLAY B.ortho 0
+SET_OVERLAY B.ortho 0 0
+SET_DICOM_XYZ B 2.000000 -16.000000 37.000000
+OPEN_WINDOW B.axialimage geom=339x339+2+874 ifrac=0.8 opacity=6
+OPEN_WINDOW B.sagittalimage geom=339x339+286+874 ifrac=0.8 opacity=6
+OPEN_WINDOW B.coronalimage geom=339x339+629+874 ifrac=0.8 opacity=6

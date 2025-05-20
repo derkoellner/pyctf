@@ -1,0 +1,54 @@
+#! /bin/sh
+
+test "$#" -ne 1 && echo usage: $0 dataset && exit
+
+ds="$1"
+hashcode=`basename $ds | cut -d_ -f1`
+
+t0=-.25
+t1=.25
+
+n=""
+d=filtered
+p=proj
+k=klusters
+
+#n="-n"
+#d=filterednoise
+#p=noiseproj
+#k=noiseklusters
+
+makemask() {
+    template=$1
+    mri=$2
+    maskname=$3
+
+    if [ ! -f $mri/mask${maskname}.nii ]; then
+	3dfractionize -template $template -input $mri/mask+orig -prefix ./maskA -clip 0
+	3dcalc -a maskA+orig -expr 'step(a-4000)' -prefix $mri/mask${maskname}.nii
+	rm maskA+orig.*
+    fi
+}
+
+mkdir -p $d $p $k
+for m in 9r0 9r1 9r2; do
+    name=${hashcode}_${m}
+    mri=~/nback/mri/$hashcode
+
+    out1=$d/${name}_theta
+    echo $out1
+    filterDs.py $n -h -d $ds -b "4 12" -m $m -t "$t0 $t1" -o $out1
+
+    out2=$d/${name}_beta
+    echo $out2
+    filterDs.py $n -h -d $ds -b "15 30" -m $m -t "$t0 $t1" -o $out2
+
+    test2.py -d "$out1 $out2" \
+	-w "$ds/SAM/theta,4-12Hz/${m}.nii $ds/SAM/beta,15-30Hz/${m}.nii" \
+	-p $p/${name}
+
+    kluster.py $p/${name}
+
+    makemask /tmp/kluster.nii $mri 8mm
+    3dcalc -a /tmp/kluster.nii -b $mri/mask8mm.nii -expr 'a*b' -prefix $k/${name}.nii
+done

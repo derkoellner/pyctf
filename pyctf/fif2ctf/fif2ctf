@@ -1,0 +1,172 @@
+#! /usr/bin/env python
+
+import os, sys, getopt
+from struct import Struct
+from copy import deepcopy
+import numpy as np
+import pyctf
+from pyctf.ctf_res4 import *
+import mne.io
+import warnings
+
+Usage = """usage: {} file.fif new.ds""".format(sys.argv[0])
+
+fifname = None
+dsname = None
+optlist, args = getopt.getopt(sys.argv[1:], "h")
+for opt, arg in optlist:
+    if opt == '-h':
+        print(Usage, file = sys.stderr)
+        sys.exit(1)
+
+if len(args) != 2:
+    print(Usage, file = sys.stderr)
+    sys.exit(1)
+
+fifname = args[0]
+dsname = args[1]
+
+if fifname[-4:] != '.fif':
+    print("first argument must end in .fif", file = sys.stderr)
+    sys.exit(1)
+
+if dsname[-3:] != '.ds':
+    print("second argument must end in .ds", file = sys.stderr)
+    sys.exit(1)
+
+# Read the .fif file.
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category = RuntimeWarning)
+    f = mne.io.read_raw_fif(fifname)
+
+#highpass = f.info['highpass']
+#lowpass = f.info['lowpass']
+nchan = f.info['nchan']
+sfreq = f.info['sfreq']
+
+chs = f.info['chs']
+name = [None] * nchan
+loc = [None] * nchan
+cal = [None] * nchan
+for i in range(nchan):
+    # reformat the name so DataEditor doesn't choke.
+    name[i] = chs[i]['ch_name'].replace('-', '')
+    loc[i] = chs[i]['loc']
+    cal[i] = chs[i]['cal']
+
+# Structure to store header data
+
+class res4data:
+    pass
+
+r = res4data()
+
+# Set up the new res4 file.
+
+os.system("rm -rf {}".format(dsname))
+os.mkdir(dsname)
+setname = os.path.basename(dsname)[:-3]
+res4name = os.path.join(dsname, setname + ".res4")
+
+# Deal with fixed length strings.
+
+def mkstr(s, n):
+    "pad s with zeros out to n, clip to n-1 if it's too long"
+    b = bytes(s, 'utf8')
+    if len(b) >= n:
+        b = b[:n-1]
+    return b + (n - len(b)) * b'\x00'
+
+# Fill in the fields.
+
+genRes = [None] * 29
+genRes[gr_appName] = mkstr("fif2ctf", 256)
+genRes[gr_dataOrigin] = mkstr("NIMH MEG Core Facility", 256)
+genRes[gr_dataDesc] = mkstr(fifname, 256)
+genRes[gr_numAvg] = 0
+genRes[gr_time] = mkstr("", 255)        # is this stored in the .fif file?
+genRes[gr_date] = mkstr("", 255)
+genRes[gr_numSamples] = f.n_times
+genRes[gr_numChannels] = nchan
+genRes[gr_sampleRate] = sfreq
+genRes[gr_epochTime] = f.n_times / sfreq
+genRes[gr_numTrials] = 1
+genRes[gr_preTrig] = 0
+genRes[gr_trialsDone] = 0
+genRes[gr_trialsDisp] = 0
+genRes[gr_saveTrials] = 0
+genRes[gr_triggerData] = mkstr("", 10)
+genRes[gr_triggerMode] = 0              # no trigger
+genRes[gr_acceptFlag] = 0
+genRes[gr_runtimeDisp] = 0
+genRes[gr_zeroHead] = 0
+genRes[gr_artifactMode] = 0
+genRes[gr_runName] = mkstr("", 32)
+genRes[gr_runTitle] = mkstr("Experiment name", 256)
+genRes[gr_inst] = mkstr("", 32)
+genRes[gr_collectDesc] = mkstr("", 32)
+genRes[gr_subjectId] = mkstr(setname.split('_')[0], 32)
+genRes[gr_operator] = mkstr("", 32)
+genRes[gr_sensorFilename] = mkstr("", 56)
+genRes[gr_rdlen] = 1
+r.runDesc = b""
+r.genRes = genRes
+
+# Filter info
+
+r.filterInfo = []
+
+# Channel info
+
+MAXCOILS = 8
+
+c = [0.] * 8                    # empty coil record
+c[6] = 0                        # nturns is an int
+coil = [c.copy() for i in range(MAXCOILS)]
+
+sr = [None] * 10
+sr[sr_type] = TYPE_MAG_SENS
+sr[sr_runNum] = 0
+sr[sr_shape] = 1                # 0-circular 1-square
+sr[sr_qGain] = 1.
+sr[sr_ioGain] = 1.
+sr[sr_ioOffset] = 0
+sr[sr_numCoils] = 1
+sr[sr_gradOrder] = 0
+sr[sr_stimPol] = 0
+
+r.chanName = [None] * nchan
+r.sensRes = [None] * nchan
+for i in range(nchan):
+    r.chanName[i] = mkstr(name[i], 32)
+    sr[sr_properGain] = 1 / cal[i]
+    for j in range(3):
+        coil[0][j] = loc[i][j]
+    c = deepcopy(coil)
+    r.sensRes[i] = (sr.copy(), c, c)    # sr, dewar, head
+
+r.coeffInfo = []
+
+res4name = os.path.join(dsname, setname + ".res4")
+write_res4_structs(res4name, r)
+
+# Read the fif data and write it out as integers.
+
+x = f.get_data()
+
+# Format to write big endian 32-bit integers.
+
+be_int = Struct(">%di" % f.n_times)
+
+meg4name = os.path.join(dsname, setname + ".meg4")
+f = open(meg4name, "wb")
+f.write(b"MEG41CP\x00")
+for i in range(nchan):
+    j = x[i] / cal[i]
+    # verify integral
+    k = j.astype('i')
+    if not np.alltrue(j - k == 0):
+        print("non-integral values in channel {}".format(i))
+    f.write(be_int.pack(*k))
+f.close()

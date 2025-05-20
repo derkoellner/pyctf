@@ -1,0 +1,6 @@
+#! /bin/sh
+
+3dMean -prefix r0.nii r0_*.nii
+3dMean -prefix r2.nii r2_*.nii
+3dpc -reduce 20 p20r0.nii -mask ../mask1cm.nii r0_*.nii
+3dpc -reduce 20 p20r2.nii -mask ../mask1cm.nii r2_*.nii

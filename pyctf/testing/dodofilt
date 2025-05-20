@@ -1,0 +1,10 @@
+#! /bin/sh
+
+rm -f dodo.log
+for dsname in `cat dslist.80`; do
+    setname=`basename $dsname .ds`
+    ds=~/nback/data/${setname}-f.ds
+
+    echo $ds
+    dofilt $ds >> dodo.log 2>&1
+done

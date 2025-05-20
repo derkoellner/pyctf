@@ -1,0 +1,91 @@
+#! /bin/sh
+
+hashlist=`cat hashlist.NC hashlist.proband`
+hashlistNC=`cat hashlist.NC`
+hashlistP=`cat hashlist.proband`
+
+makemasked() {
+    hash="$1"
+    mri="$2"
+
+    # Talairach them all.
+
+    for c in 9r0 9r1 9r2; do
+	n=${hash}_$c
+	in=${n}.nii
+	at=${n}_at.nii
+	rm -f $at
+	@auto_tlrc -apar $mri/$hash/brain+tlrc -input $in -dxyz 8 -rmode NN > /dev/null
+    done
+
+    # Use one to create a mask for all of them.
+
+    at=${hash}_9r0_at.nii
+    rm -f tmpmask+* ${hash}_mask.nii
+    3dfractionize -template $at -input $mri/$hash/mask+tlrc -prefix ./tmpmask -clip 0
+    3dcalc -a tmpmask+tlrc -expr 'step(a-4000)' -prefix ${hash}_mask.nii
+    rm tmpmask+*
+
+    # Now apply the mask.
+
+    for c in 9r0 9r1 9r2; do
+	n=${hash}_$c
+	at=${n}_at.nii
+	masked=${n}_m.nii
+	3dcalc -a $at -b ${hash}_mask.nii -expr 'a*b' -prefix ${masked}
+    done
+}
+
+doit() {
+    hash="$1"
+    a=${hash}_9r0_m.nii
+    b=${hash}_9r2_m.nii
+    3dcalc -a $a -b $b -expr 'log(b/a)' -prefix ${hash}_2v0.nii
+}
+
+expandhash() {
+    hlist=`eval "echo \$"$1`
+    suff="$2"
+    for x in $hlist; do
+	echo ${x}$suff
+    done
+}
+
+expandhash2() {
+    hlist=`eval "echo \$"$1`
+    for x in $hlist; do
+	echo -dset 1 ${x}_9r0_m.nii -dset 2 ${x}_9r2_m.nii
+    done
+}
+
+cd klusters
+
+#for x in $hashlist; do
+#    makemasked $x ~/nback/mri
+#done
+
+#seta=`expandhash hashlistNC _9r0_m.nii`
+#setb=`expandhash hashlistNC _9r2_m.nii`
+#3dttest++ -paired -setA $seta -setB $setb -prefix out
+
+#seta=`expandhash hashlistNC _9r2_m.nii`
+#setb=`expandhash hashlistP _9r2_m.nii`
+#3dttest++ -setA $seta -setB $setb -prefix out
+
+#d=`expandhash2 hashlistNC`
+#d=`expandhash2 hashlistP`
+#3dWilcoxon -out 0v2p $d
+
+#for x in $hashlist; do
+#    doit $x
+#done
+
+#cmd="3dANOVA2 -type 3 -alevels 3 -blevels 80 -bucket N"
+#cmd="$cmd -fa back -adiff 3 1 r2vsr0"
+#d=""
+#n=1
+#for h in $hashlist; do
+#    d="$d -dset 1 $n ${h}_9r0_m.nii -dset 2 $n ${h}_9r1_m.nii -dset 3 $n ${h}_9r2_m.nii"
+#    n=$((n+1))
+#done
+#eval $cmd $d

@@ -1,0 +1,7 @@
+Verbose
+DataSet /home/tomh/selfpaced/data/Allison_press.ds
+MRIDir /home/tomh/selfpaced/mri
+CovBand 15 25
+Model Nolte
+Field
+Target targ

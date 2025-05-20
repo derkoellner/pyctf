@@ -1,0 +1,109 @@
+#! /usr/bin/env python
+
+import sys, os, time, signal
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gdk
+from watchdir import watchdir, listnpy
+
+uidir = os.path.dirname(sys.argv[0])
+GLADEFILE = os.path.join(uidir, "scope.ui")
+
+# The class that manages the main window.
+
+class Scope:
+    def __init__(self):
+        glade_file = GLADEFILE
+
+        sigdict = {
+            "gtk_main_quit" : self.on_quit_clicked,
+            "on_help_clicked" : self.on_help_clicked,
+            "on_help_close_clicked" : self.on_help_close_clicked,
+            "on_dirname_activate" : self.on_dirname_activate,
+        }
+
+        builder = Gtk.Builder()
+        builder.add_from_file(glade_file)
+        builder.connect_signals(sigdict)
+        self.builder = builder
+
+        self.dirname = self.builder.get_object("dirname")
+        self.help_window = self.builder.get_object("help_window")
+
+        # A list of slots, stored in a ListStore,
+        # rendered by a CellRenderer, and managed by a TreeView.
+
+        self.slotlist = self.builder.get_object("treeview1")
+        self.liststore = self.builder.get_object("liststore1")
+
+        self.slotlist.get_selection().set_mode(Gtk.SelectionMode.MULTIPLE)
+
+        # The renderer gets text values from column 0.
+
+        column = Gtk.TreeViewColumn(None, Gtk.CellRendererText(), text = 0)
+        self.slotlist.append_column(column)
+
+        self.done = False
+
+    def on_dirname_activate(self, widget):
+        dir = self.dirname.get_text()
+        set_liststore(self.liststore, listnpy(dir))
+        watchdir(dir, lambda dir: self.update_liststore(dir))
+
+    def update_liststore(self, dir):
+        set_liststore(self.liststore, listnpy(dir))
+
+    def on_help_clicked(self, widget):
+        self.help_window.show()
+
+    def on_help_close_clicked(self, widget):
+        self.help_window.hide()
+
+    def on_quit_clicked(self, widget):
+        self.done = True
+
+    """
+    # Get the list of regions
+
+    s = regionlist.get_selection()
+    l = []
+    for (r,) in s.get_selected_rows()[1]:
+        l.append(Atlas[r])
+
+    if len(l) == 0:
+        return
+
+    # Work in a temporary directory.
+
+    d = tempfile.mkdtemp()
+    os.chdir(d)
+
+    s = builder.regionlist.get_selection()
+        s.select_path(idx)
+        i += 1
+    """
+
+# Set the items of a ListStore.
+
+def set_liststore(liststore, items):
+    l = [i for i in items]
+    l.sort()
+    liststore.clear()
+    for i in l:
+        liststore.append([i])
+
+if __name__ == "__main__":
+
+    # Make ctrl-C work.
+
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    # Initialize the interface.
+
+    ui = Scope()
+
+    # Run it.
+
+    while not ui.done:
+        Gtk.main_iteration_do(0)
+        time.sleep(.02)

@@ -1,0 +1,11 @@
+#! /bin/sh
+
+mkdir -p klusters2
+
+for x in `seq 100`; do
+    echo $x
+    kluster.py proj/AEDTPJOU_9r0
+    3dcalc -a /tmp/kluster.nii -b mask1cm.nii -expr 'a*b' -prefix klusters2/r0_$x.nii
+    kluster.py proj/AEDTPJOU_9r2
+    3dcalc -a /tmp/kluster.nii -b mask1cm.nii -expr 'a*b' -prefix klusters2/r2_$x.nii
+done

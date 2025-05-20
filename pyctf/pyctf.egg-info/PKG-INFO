@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: pyctf
+Version: 0.1.0
+Summary: NeuroprostheticData CTF processing tools
+Author: Your Name
+License: MIT
+Dynamic: author
+Dynamic: license
+Dynamic: summary

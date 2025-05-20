@@ -1,0 +1,13 @@
+# sample rt param file
+
+Verbose             # use verbose mode
+DataSet rest.ds     # used to provide the forward model (ortho space)
+MRIDir mri          # where the MRI files are
+CovBand 15 25       # beta is good for estimating orientation
+#matvec brain+tlrc   # this provides the tlrc->ortho transform
+#Atlas brain.gii     # tbd
+Model Nolte
+Field
+Target target       # target is a 4 column file containing (PRI cm) coordinates
+
+# The result of sam_cov -m rt/sam_wts -m rt is rt.fwd

@@ -1,0 +1,7 @@
+#! /bin/sh
+
+test "$#" -ne 1 && echo usage: $0 resmm && exit 1
+
+res="$1"
+
+@auto_tlrc -base brain+tlrc -input mask+orig -dxyz $res -no_ss

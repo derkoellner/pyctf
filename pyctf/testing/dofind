@@ -1,0 +1,10 @@
+#! /bin/sh
+
+export PYTHONPATH=/home/tomh/lib
+
+l=`sort -t/ -k3nr /tmp/moo`
+
+for x in $l; do
+    y=/net/tako3/triton2/data/$x
+    ./findnoisy.py $y
+done
