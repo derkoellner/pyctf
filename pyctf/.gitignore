@@ -10,3 +10,5 @@ bin/
 lib/
 *_pb2.py
 _build/
+*.egg-info
+dist/
