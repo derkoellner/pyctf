@@ -2,3 +2,4 @@
 include README.md
 recursive-include pyctf *
 recursive-include pyctf/config *
+recursive-include pyctf/pyctf *.so

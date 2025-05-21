@@ -56,6 +56,8 @@ static GIIATLAS *GAtlas;
 #define MORDER 3            // default integration order for multisphere
 #define NORDER 10           // default integration order for Nolte
 
+extern int ORDER;
+
 static char Doc_GetDsInfo[] = "GetDsInfo(ds)\n\
 Read the dataset's header information.\n";
 

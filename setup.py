@@ -1,29 +1,40 @@
 # Pyctf/setup.py
-import subprocess
 import os
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_py import build_py as _build_py
 import numpy
+import glob
 
 include_dir_for_geoms = os.path.join("pyctf", "pyctf", "samlib", "samlib")
+
+# sources = [
+#     "pyctf/pyctf/samlib/_samlib.c",
+#     "pyctf/pyctf/samlib/samlib/GetCoeffs.c",
+#     "pyctf/pyctf/samlib/samlib/rnynm.c",
+#     "pyctf/pyctf/samlib/samlib/GetBasis.c",
+#     "pyctf/pyctf/samlib/samlib/GetHull.c",
+# ]
+
+sources = ["pyctf/pyctf/samlib/_samlib.c"] + \
+          glob.glob("pyctf/pyctf/samlib/samlib/*.c")
 
 class CustomBuild(_build_py):
     def run(self):
         print("Running custom Makefile build for pyctf...")
-        make_dir = os.path.join(os.path.dirname(__file__), "pyctf")
-        subprocess.check_call(["make"], cwd=make_dir)
+        # make_dir = os.path.join(os.path.dirname(__file__), "pyctf")
+        # subprocess.check_call(["make"], cwd=make_dir)
         super().run()
 
 ext_modules = [
     Extension(
         "pyctf._samlib",
-        sources=["pyctf/pyctf/samlib/_samlib.c"],
+        sources=sources,
         include_dirs=[numpy.get_include(), include_dir_for_geoms],
-        libraries=["fftw3", "m"],
+        # libraries=["fftw3", "m"],
+        libraries=["fftw3", "m", "gsl", "gslcblas"],
         extra_compile_args=["-O2", "-fPIC"],
     ),
 ]
-
 
 setup(
     name="pyctf",
